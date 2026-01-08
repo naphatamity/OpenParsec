@@ -11,6 +11,8 @@ struct SettingsHandler
 	public static var noOverlay:Bool = false
 	public static var hideStatusBar:Bool = true
 	public static var rightClickPosition:RightClickPosition = .firstFinger
+	public static var invertScrollX:Bool = false
+	public static var invertScrollY:Bool = false
 	
 	public static func load()
 	{
@@ -30,6 +32,10 @@ struct SettingsHandler
 			{ noOverlay = UserDefaults.standard.bool(forKey:"noOverlay") }
 		if UserDefaults.standard.exists(forKey:"hideStatusBar")
 		{ hideStatusBar = UserDefaults.standard.bool(forKey:"hideStatusBar") }
+		if UserDefaults.standard.exists(forKey:"invertScrollX")
+		{ invertScrollX = UserDefaults.standard.bool(forKey:"invertScrollX") }
+		if UserDefaults.standard.exists(forKey:"invertScrollY")
+		{ invertScrollY = UserDefaults.standard.bool(forKey:"invertScrollY") }
 		
 		if UserDefaults.standard.exists(forKey:"resolution") {
 			for res in ParsecResolution.resolutions {
@@ -52,6 +58,8 @@ struct SettingsHandler
 		UserDefaults.standard.set(noOverlay, forKey:"noOverlay")
 		UserDefaults.standard.set(resolution.desc, forKey:"resolution")
 		UserDefaults.standard.set(hideStatusBar, forKey: "hideStatusBar")
+		UserDefaults.standard.set(invertScrollX, forKey: "invertScrollX")
+		UserDefaults.standard.set(invertScrollY, forKey: "invertScrollY")
 	}
 }
 

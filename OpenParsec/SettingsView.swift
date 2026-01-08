@@ -13,6 +13,8 @@ struct SettingsView:View
 	@State var mouseSensitivity:Float = SettingsHandler.mouseSensitivity
 	@State var noOverlay:Bool = SettingsHandler.noOverlay
 	@State var hideStatusBar:Bool = SettingsHandler.hideStatusBar
+	@State var invertScrollX:Bool = SettingsHandler.invertScrollX
+	@State var invertScrollY:Bool = SettingsHandler.invertScrollY
 	
 	let resolutionChoices : [Choice<ParsecResolution>]
 
@@ -105,6 +107,16 @@ struct SettingsView:View
 									.frame(width: 200)
 								Text(String(format: "%.1f", mouseSensitivity))
 							}
+							CatItem("Invert Horizontal")
+							{
+								Toggle("", isOn:$invertScrollX)
+									.frame(width:80)
+							}
+							CatItem("Invert Vertical")
+							{
+								Toggle("", isOn:$invertScrollY)
+									.frame(width:80)
+							}
                         }
                         CatTitle("Graphics")
                         CatList()
@@ -174,6 +186,8 @@ struct SettingsView:View
 		SettingsHandler.noOverlay = noOverlay
 		SettingsHandler.hideStatusBar = hideStatusBar
 		SettingsHandler.mouseSensitivity = mouseSensitivity
+		SettingsHandler.invertScrollX = invertScrollX
+		SettingsHandler.invertScrollY = invertScrollY
 		SettingsHandler.save()
 		
 		visible = false

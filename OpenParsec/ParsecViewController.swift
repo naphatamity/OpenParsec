@@ -214,7 +214,9 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 				CParsec.sendMousePosition(Int32(position.x), Int32(position.y))
 			} else {
 				let delta = gestureRecognizer.velocity(in: gestureRecognizer.view)
-				CParsec.sendMouseDelta(Int32(Float(delta.x) / 60 * SettingsHandler.mouseSensitivity), Int32(Float(delta.y) / 60 * SettingsHandler.mouseSensitivity))
+				let dx = Int32(Float(delta.x) / 60 * SettingsHandler.mouseSensitivity) * (SettingsHandler.invertScrollX ? -1 : 1)
+				let dy = Int32(Float(delta.y) / 60 * SettingsHandler.mouseSensitivity) * (SettingsHandler.invertScrollY ? -1 : 1)
+				CParsec.sendMouseDelta(dx, dy)
 			}
 
 			
@@ -274,10 +276,9 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 			CParsec.sendMouseClickMessage(button, false)
 		} else if gestureRecognizer.state == .changed {
 			let newLocation = gestureRecognizer.location(in: gestureRecognizer.view)
-			CParsec.sendMouseDelta(
-				Int32(Float(newLocation.x - lastLongPressPoint.x) * SettingsHandler.mouseSensitivity),
-				Int32(Float(newLocation.y - lastLongPressPoint.y) * SettingsHandler.mouseSensitivity)
-			)
+			let dx = Int32(Float(newLocation.x - lastLongPressPoint.x) * SettingsHandler.mouseSensitivity) * (SettingsHandler.invertScrollX ? -1 : 1)
+			let dy = Int32(Float(newLocation.y - lastLongPressPoint.y) * SettingsHandler.mouseSensitivity) * (SettingsHandler.invertScrollY ? -1 : 1)
+			CParsec.sendMouseDelta(dx, dy)
 			lastLongPressPoint = newLocation
 		}
 	}
