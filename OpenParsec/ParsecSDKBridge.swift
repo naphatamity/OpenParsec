@@ -27,6 +27,13 @@ enum RightClickPosition:Int
 	case secondFinger
 }
 
+enum PerformanceMode:Int
+{
+	case quality = 0      // Higher quality, standard latency
+	case balanced = 1     // Balanced quality and latency
+	case lowLatency = 2   // Lower quality, minimum latency
+}
+
 struct KeyBoardKeyEvent {
 	var input: UIKey?
 	var isPressBegin: Bool
@@ -123,6 +130,10 @@ class ParsecSDKBridge: ParsecService
 		audio_clear(&_audio)
 		ParsecClientDisconnect(_parsec)
 		backgroundTaskRunning = false
+	}
+	
+	func pauseStream(video: Bool, audio: Bool) -> ParsecStatus {
+		return ParsecClientPause(_parsec, video, audio)
 	}
 	
 	func getStatus() -> ParsecStatus
@@ -483,6 +494,16 @@ class ParsecSDKBridge: ParsecService
 	
 	func startBackgroundTask(){
 	
+		// Thread priority based on performance mode
+		let qos: DispatchQoS.QoSClass
+		switch SettingsHandler.performanceMode {
+		case .quality:
+			qos = .userInitiated
+		case .balanced:
+			qos = .userInitiated
+		case .lowLatency:
+			qos = .userInteractive  // Highest priority for minimum latency
+		}
 		
 		let item1 = DispatchWorkItem {
 			while self.backgroundTaskRunning {
@@ -499,7 +520,7 @@ class ParsecSDKBridge: ParsecService
 			}
 			
 		}
-		let mainQueue = DispatchQueue.global()
+		let mainQueue = DispatchQueue.global(qos: qos)
 		mainQueue.async(execute: item1)
 		mainQueue.async(execute: item2)
 	}

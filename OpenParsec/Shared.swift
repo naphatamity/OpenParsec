@@ -1,5 +1,7 @@
 import Foundation
 import SwiftUI
+import UIKit
+import ParsecSDK
 
 var appScheme:ColorScheme = .dark
 
@@ -81,4 +83,83 @@ class SharedModel: ObservableObject {
 
 class DataManager {
 	static let model = SharedModel()
+}
+
+// MARK: - Background State Manager
+class BackgroundStateManager {
+	static let shared = BackgroundStateManager()
+	
+	private var backgroundTimer: Timer?
+	private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+	
+	/// Timeout duration in seconds before disconnecting (30 seconds)
+	let timeoutDuration: TimeInterval = 30
+	
+	/// Whether a Parsec session is currently active
+	var isSessionActive: Bool {
+		guard CParsec.isInitialized else { return false }
+		return CParsec.getStatus() == PARSEC_OK
+	}
+	
+	/// Called when app enters background
+	func handleEnterBackground() {
+		guard isSessionActive else { return }
+		
+		print("[Background] App entering background, pausing stream...")
+		
+		// Request background time from iOS
+		backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "ParsecBackgroundTimeout") { [weak self] in
+			// Called if we run out of background time
+			self?.forceDisconnect()
+		}
+		
+		// Pause video and audio to prevent decode errors
+		CParsec.pause(video: true, audio: true)
+		
+		// Start timeout timer
+		backgroundTimer = Timer.scheduledTimer(withTimeInterval: timeoutDuration, repeats: false) { [weak self] _ in
+			self?.timeoutExpired()
+		}
+	}
+	
+	/// Called when app enters foreground
+	func handleEnterForeground() {
+		print("[Background] App entering foreground")
+		
+		// Cancel timeout timer
+		backgroundTimer?.invalidate()
+		backgroundTimer = nil
+		
+		// Resume stream if still connected
+		if isSessionActive {
+			print("[Background] Resuming stream...")
+			CParsec.pause(video: false, audio: false)
+		}
+		
+		// End background task
+		endBackgroundTask()
+	}
+	
+	private func timeoutExpired() {
+		print("[Background] Timeout expired, disconnecting...")
+		forceDisconnect()
+	}
+	
+	private func forceDisconnect() {
+		backgroundTimer?.invalidate()
+		backgroundTimer = nil
+		
+		if isSessionActive {
+			CParsec.disconnect()
+		}
+		
+		endBackgroundTask()
+	}
+	
+	private func endBackgroundTask() {
+		if backgroundTaskID != .invalid {
+			UIApplication.shared.endBackgroundTask(backgroundTaskID)
+			backgroundTaskID = .invalid
+		}
+	}
 }

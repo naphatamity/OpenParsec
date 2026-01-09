@@ -42,6 +42,11 @@ struct ParsecStatusBar : View {
 			return // no need to poll if we aren't connected anymore
 		}
 		
+		// Skip status check when app is in background (paused)
+		if ParsecGLKRenderer.isPaused {
+			return
+		}
+		
 		var pcs = ParsecClientStatus()
 		let status = CParsec.getStatusEx(&pcs)
 		
@@ -57,7 +62,8 @@ struct ParsecStatusBar : View {
 		if showMenu
 		{
 			let str = String.fromBuffer(&pcs.decoder.0.name.0, length:16)
-			metricInfo = "Decode \(String(format:"%.2f", pcs.`self`.metrics.0.decodeLatency))ms    Encode \(String(format:"%.2f", pcs.`self`.metrics.0.encodeLatency))ms    Network \(String(format:"%.2f", pcs.`self`.metrics.0.networkLatency))ms    Bitrate \(String(format:"%.2f", pcs.`self`.metrics.0.bitrate))Mbps    \(pcs.decoder.0.h265 ? "H265" : "H264") \(pcs.decoder.0.width)x\(pcs.decoder.0.height) \(pcs.decoder.0.color444 ? "4:4:4" : "4:2:0") \(str)"
+			let fps = String(format:"%.0f", ParsecGLKRenderer.currentFPS)
+			metricInfo = "FPS \(fps)    Decode \(String(format:"%.2f", pcs.`self`.metrics.0.decodeLatency))ms    Encode \(String(format:"%.2f", pcs.`self`.metrics.0.encodeLatency))ms    Network \(String(format:"%.2f", pcs.`self`.metrics.0.networkLatency))ms    Bitrate \(String(format:"%.2f", pcs.`self`.metrics.0.bitrate))Mbps    \(pcs.decoder.0.h265 ? "H265" : "H264") \(pcs.decoder.0.width)x\(pcs.decoder.0.height) \(pcs.decoder.0.color444 ? "4:4:4" : "4:2:0") \(str)"
 		}
 	}
 }
@@ -166,7 +172,7 @@ struct ParsecView:View
 							}
 							Menu() {
 								ForEach(bitrates, id: \.self) { bitrate in
-									Button("\(bitrate) Mbps") {
+									Button(bitrate == 0 ? "Unlimited" : "\(bitrate) Mbps") {
 										changeBitRate(bitrate: bitrate)
 									}
 								}

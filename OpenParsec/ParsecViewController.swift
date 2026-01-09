@@ -30,6 +30,14 @@ class ParsecViewController :UIViewController {
 	var keyboardAccessoriesView : UIView?
 	var keyboardHeight : CGFloat = 0.0
 	
+	// Local zoom properties
+	var currentZoomScale: CGFloat = 1.0
+	var minZoomScale: CGFloat = 1.0
+	var maxZoomScale: CGFloat = 5.0
+	var zoomOffset: CGPoint = .zero
+	var initialPinchCenter: CGPoint = .zero
+	var initialOffset: CGPoint = .zero
+	
 	override var prefersPointerLocked: Bool {
 		return true
 	}
@@ -115,6 +123,18 @@ class ParsecViewController :UIViewController {
 		longPressGestureRecognizer.allowedTouchTypes = [0, 2]
 		view.addGestureRecognizer(longPressGestureRecognizer)
 		
+		// Pinch gesture for local zoom (doesn't send to Mac)
+		let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
+		pinchGestureRecognizer.delegate = self
+		view.addGestureRecognizer(pinchGestureRecognizer)
+		
+		// Double tap to reset zoom
+		let doubleTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(_:)))
+		doubleTapGestureRecognizer.numberOfTapsRequired = 2
+		doubleTapGestureRecognizer.numberOfTouchesRequired = 1
+		view.addGestureRecognizer(doubleTapGestureRecognizer)
+		singleFingerTapGestureRecognizer.require(toFail: doubleTapGestureRecognizer)
+		
 		NotificationCenter.default.addObserver(
 			self,
 			selector: #selector(keyboardWillShow),
@@ -190,6 +210,14 @@ class ParsecViewController :UIViewController {
 }
 
 extension ParsecViewController : UIGestureRecognizerDelegate {
+	
+	// Allow pinch gesture to work with other gestures
+	func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+		if gestureRecognizer is UIPinchGestureRecognizer || otherGestureRecognizer is UIPinchGestureRecognizer {
+			return true
+		}
+		return false
+	}
 	
 	@objc func handlePanGesture(_ gestureRecognizer:UIPanGestureRecognizer)
 	{
@@ -281,6 +309,75 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 			CParsec.sendMouseDelta(dx, dy)
 			lastLongPressPoint = newLocation
 		}
+	}
+	
+	@objc func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
+		guard let targetView = gestureRecognizer.view else { return }
+		
+		if gestureRecognizer.state == .began {
+			// Store initial state when pinch begins
+			initialPinchCenter = gestureRecognizer.location(in: targetView.superview)
+			initialOffset = zoomOffset
+		}
+		
+		if gestureRecognizer.state == .changed {
+			// Calculate new scale
+			let scale = gestureRecognizer.scale
+			let previousScale = currentZoomScale
+			let newScale = min(max(previousScale * scale, minZoomScale), maxZoomScale)
+			
+			// Get current pinch center
+			let pinchCenter = gestureRecognizer.location(in: targetView.superview)
+			
+			// Calculate how much the pinch point moved
+			let pinchDelta = CGPoint(
+				x: pinchCenter.x - initialPinchCenter.x,
+				y: pinchCenter.y - initialPinchCenter.y
+			)
+			
+			// Calculate the zoom focus point offset
+			// When zooming, we want the point under the pinch to stay under the pinch
+			let scaleRatio = newScale / previousScale
+			let viewCenter = CGPoint(x: targetView.bounds.midX, y: targetView.bounds.midY)
+			
+			// Offset from center to pinch point (in original coordinates)
+			let pinchFromCenter = CGPoint(
+				x: (initialPinchCenter.x - viewCenter.x - initialOffset.x) / previousScale,
+				y: (initialPinchCenter.y - viewCenter.y - initialOffset.y) / previousScale
+			)
+			
+			// New offset to keep pinch point stationary
+			zoomOffset = CGPoint(
+				x: initialOffset.x + pinchDelta.x + pinchFromCenter.x * (previousScale - newScale),
+				y: initialOffset.y + pinchDelta.y + pinchFromCenter.y * (previousScale - newScale)
+			)
+			
+			currentZoomScale = newScale
+			
+			// Apply transform: translate then scale
+			let transform = CGAffineTransform(translationX: zoomOffset.x, y: zoomOffset.y)
+				.scaledBy(x: currentZoomScale, y: currentZoomScale)
+			
+			targetView.transform = transform
+			gestureRecognizer.scale = 1.0
+		}
+		
+		if gestureRecognizer.state == .ended {
+			// Update initial offset for next gesture
+			initialOffset = zoomOffset
+		}
+	}
+	
+	@objc func handleDoubleTap(_ gestureRecognizer: UITapGestureRecognizer) {
+		guard let targetView = gestureRecognizer.view else { return }
+		
+		// Reset zoom to 1.0
+		UIView.animate(withDuration: 0.3) {
+			targetView.transform = .identity
+		}
+		currentZoomScale = 1.0
+		zoomOffset = .zero
+		initialOffset = .zero
 	}
 	
 }

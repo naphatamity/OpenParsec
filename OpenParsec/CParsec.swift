@@ -30,6 +30,9 @@ class ParsecResolution : Hashable {
 		ParsecResolution(width: 2560, height: 1600, desc: "2560x1600 (16:10)"),
 		ParsecResolution(width: 2560, height: 1440, desc: "2560x1440 (16:9)"),
 		ParsecResolution(width: 2560, height: 1080, desc: "2560x1080 (21:9)"),
+		ParsecResolution(width: 2360, height: 1640, desc: "2360x1640 (iPad Air)"),
+		ParsecResolution(width: 2388, height: 1668, desc: "2388x1668 (iPad Pro 11)"),
+		ParsecResolution(width: 2732, height: 2048, desc: "2732x2048 (iPad Pro 12.9)"),
 		ParsecResolution(width: 1920, height: 1200, desc: "1920x1200 (16:10)"),
 		ParsecResolution(width: 1920, height: 1080, desc: "1920x1080 (16:9)"),
 		ParsecResolution(width: 1680, height: 1050, desc: "1680x1050 (16:10)"),
@@ -40,7 +43,7 @@ class ParsecResolution : Hashable {
 		ParsecResolution(width: 1280, height: 720, desc: "1280x720 (16:9)"),
 		ParsecResolution(width: 1024, height: 768, desc: "1024x768 (4:3)"),
 	]
-	static var bitrates = [3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+	static var bitrates = [3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 150, 0]
 }
 
 
@@ -66,6 +69,7 @@ protocol ParsecService {
 	
 	func connect(_ peerID: String) -> ParsecStatus
 	func disconnect()
+	func pauseStream(video: Bool, audio: Bool) -> ParsecStatus
 	func getStatus() -> ParsecStatus
 	func getStatusEx(_ pcs: inout ParsecClientStatus) -> ParsecStatus
 	func setFrame(_ width: CGFloat, _ height: CGFloat, _ scale: CGFloat)
@@ -107,7 +111,10 @@ class CParsec
 		return parsecImpl.mouseInfo
 	}
 	
-	
+	/// Check if Parsec has been initialized
+	static var isInitialized: Bool {
+		return parsecImpl != nil
+	}
 
 	static var parsecImpl: ParsecService!
 
@@ -129,6 +136,13 @@ class CParsec
 	static func disconnect()
 	{
 		parsecImpl.disconnect()
+	}
+	
+	static func pause(video: Bool, audio: Bool) {
+		let status = parsecImpl.pauseStream(video: video, audio: audio)
+		if status != PARSEC_OK {
+			print("[CParsec] Pause failed with status: \(status.rawValue)")
+		}
 	}
 
 	static func getStatus() -> ParsecStatus

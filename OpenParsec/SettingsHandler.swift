@@ -13,6 +13,7 @@ struct SettingsHandler
 	public static var rightClickPosition:RightClickPosition = .firstFinger
 	public static var invertScrollX:Bool = false
 	public static var invertScrollY:Bool = false
+	public static var performanceMode:PerformanceMode = .balanced
 	
 	public static func load()
 	{
@@ -36,6 +37,8 @@ struct SettingsHandler
 		{ invertScrollX = UserDefaults.standard.bool(forKey:"invertScrollX") }
 		if UserDefaults.standard.exists(forKey:"invertScrollY")
 		{ invertScrollY = UserDefaults.standard.bool(forKey:"invertScrollY") }
+		if UserDefaults.standard.exists(forKey:"performanceMode")
+		{ performanceMode = PerformanceMode(rawValue:UserDefaults.standard.integer(forKey:"performanceMode"))! }
 		
 		if UserDefaults.standard.exists(forKey:"resolution") {
 			for res in ParsecResolution.resolutions {
@@ -60,6 +63,7 @@ struct SettingsHandler
 		UserDefaults.standard.set(hideStatusBar, forKey: "hideStatusBar")
 		UserDefaults.standard.set(invertScrollX, forKey: "invertScrollX")
 		UserDefaults.standard.set(invertScrollY, forKey: "invertScrollY")
+		UserDefaults.standard.set(performanceMode.rawValue, forKey: "performanceMode")
 	}
 }
 

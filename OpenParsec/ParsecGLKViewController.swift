@@ -52,10 +52,35 @@ class ParsecGLKViewController : ParsecPlayground {
 	private func setupGLKViewController() {
 		glkView.context = EAGLContext(api: .openGLES3)!
 		glkViewController.view = glkView
-		glkViewController.preferredFramesPerSecond = 60
+		// Request 120fps - will be capped by display refresh rate (60Hz on iPad Air, 120Hz on Pro)
+		// This ensures we get maximum fps the display supports
+		glkViewController.preferredFramesPerSecond = 120
+		glkViewController.isPaused = false  // Can be paused when app goes to background
 		self.viewController.addChild(glkViewController)
 		self.viewController.view.addSubview(glkViewController.view)
 		self.glkViewController.didMove(toParent: self.viewController)
+		
+		// Listen for pause/resume notifications
+		NotificationCenter.default.addObserver(
+			self,
+			selector: #selector(pauseRendering),
+			name: UIApplication.willResignActiveNotification,
+			object: nil
+		)
+		NotificationCenter.default.addObserver(
+			self,
+			selector: #selector(resumeRendering),
+			name: UIApplication.didBecomeActiveNotification,
+			object: nil
+		)
+	}
+	
+	@objc private func pauseRendering() {
+		glkViewController.isPaused = true
+	}
+	
+	@objc private func resumeRendering() {
+		glkViewController.isPaused = false
 	}
 	
 	func cleanUp() {

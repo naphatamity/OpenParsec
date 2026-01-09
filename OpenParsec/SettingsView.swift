@@ -15,6 +15,7 @@ struct SettingsView:View
 	@State var hideStatusBar:Bool = SettingsHandler.hideStatusBar
 	@State var invertScrollX:Bool = SettingsHandler.invertScrollX
 	@State var invertScrollY:Bool = SettingsHandler.invertScrollY
+	@State var performanceMode:PerformanceMode = SettingsHandler.performanceMode
 	
 	let resolutionChoices : [Choice<ParsecResolution>]
 
@@ -130,6 +131,15 @@ struct SettingsView:View
 								])
                                 .frame(width:165)
                             }*/
+							CatItem("Performance Mode")
+							{
+								MultiPicker(selection:$performanceMode, options:
+								[
+									Choice("Quality", PerformanceMode.quality),
+									Choice("Balanced", PerformanceMode.balanced),
+									Choice("Low Latency", PerformanceMode.lowLatency)
+								])
+							}
 							CatItem("Default Resolution")
 							{
 								MultiPicker(selection:$resolution, options:resolutionChoices)
@@ -188,6 +198,7 @@ struct SettingsView:View
 		SettingsHandler.mouseSensitivity = mouseSensitivity
 		SettingsHandler.invertScrollX = invertScrollX
 		SettingsHandler.invertScrollY = invertScrollY
+		SettingsHandler.performanceMode = performanceMode
 		SettingsHandler.save()
 		
 		visible = false
